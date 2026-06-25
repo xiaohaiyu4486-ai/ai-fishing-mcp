@@ -1,0 +1,2 @@
+# 🎣 零依赖：游戏引擎和 MCP server 都只用 Python 标准库。
+# 这个文件留空是故意的，方便 Render 识别为 Python 服务。

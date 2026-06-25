@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ai-fishing-game-mcp
+    runtime: python
+    plan: free
+    buildCommand: ""           # 零依赖，无需安装任何东西
+    startCommand: python server.py
+    envVars:
+      - key: MCP_AUTH_TOKEN     # 在 Render 控制台手动填一个随机长字符串
+        sync: false
+      - key: DATA_DIR
+        value: /var/data        # 指向下面挂载的持久磁盘
+    disk:
+      name: fishing-data
+      mountPath: /var/data      # 存档 fishing_save.json 放这里，重启不丢
+      sizeGB: 1

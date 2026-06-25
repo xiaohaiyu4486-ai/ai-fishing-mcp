@@ -1,0 +1,6 @@
+data/
+*.corrupt
+fishing_save.json
+__pycache__/
+*.pyc
+.DS_Store

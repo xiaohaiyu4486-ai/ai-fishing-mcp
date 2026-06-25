@@ -1,0 +1,182 @@
+# 🎣 文字钓鱼 · 给 AI 玩的确定性小游戏
+
+一个**单文件、零依赖、确定性**的文字钓鱼游戏 —— 专门做来**让你的 AI 伴侣来玩**的。
+
+买饵 → 抛竿 → 按稀有度钓上各种鱼 → 卖鱼换点数 → 解锁新水域 → 集齐图鉴。
+55 种鱼、11 个钓点、四季流转、漂流瓶/宝箱/宝物、稀有度仪式感文案……一竿一竿钓下去，看你的 AI 怎么经营、怎么为一条传说鱼上钩而激动。
+
+> **它只给玩法逻辑（引擎）。怎么接到你自己的 AI 上，由你配置** —— 下面「接到你的 AI 上」一节给了三种接法草图。
+
+---
+
+## 这是什么 / 为什么是「给 AI 玩」
+
+普通文字游戏是给人玩的。这个引擎从设计上就是给 **AI 玩家**用的：
+
+- **确定性**：内置 mulberry32 PRNG，状态全部序列化进存档。**同一个种子 + 同一串指令 = 逐位可复现的结果**。便于复盘、测试、分享同一局。
+- **盲玩**：可以让 AI 在**不剧透**的前提下玩 —— 它不知道有哪些鱼、稀有鱼在哪、概率多少，全靠一竿一竿亲手发现。
+- **存档独立**：游戏状态存在磁盘文件里，**不在对话上下文里**。AI 的对话被清空，钓鱼进度也不会丢。
+- **省 token**：支持一次「连钓 N 竿」，只回一个汇总（精彩的留全文、杂鱼折叠成清点），不用一竿一条消息来回烧上下文。
+
+---
+
+## 仓库里有什么
+
+| 文件 | 是什么 | 你怎么用 |
+|---|---|---|
+| **`engine.py`** | **可读的引擎源码**。对外只用两个接口：`cmd("指令")` 返回结果文字、`new_game(seed)` 重开一局。 | 想读懂 / 改数值 / 加鱼加地点，就看这个。也可以直接 `import engine` 当库用。 |
+| **`fishing.py`** | **盲玩版**。引擎被打包进文件里、藏起来，只露 `cmd()`/`new_game()`。 | 想让 AI **不剧透**地玩，就把这个文件给它（它读不到鱼谱/概率，只能靠抛竿发现）。 |
+| `build_blind.py` | 从 `engine.py` 重新生成 `fishing.py` 的小脚本。 | 改了 `engine.py` 后跑 `python build_blind.py`，让盲玩版跟上。 |
+| `tool-schema.json` | `play_fishing` 工具的 JSON Schema（函数调用接法用）。 | 用「函数调用 / tool use」接 AI 时的参考。 |
+| `examples/` | 接法示例。 | 照着接。 |
+
+> `engine.py` 和 `fishing.py` 是**同一个游戏**，只是 `fishing.py` 把引擎藏了起来防剧透。二选一即可，或都放着。
+
+---
+
+## 快速开始（自己先玩两把）
+
+需要 Python 3.8+。
+
+```python
+import engine            # 或 import fishing（盲玩版，接口一样）
+
+print(engine.cmd("help"))            # 看规则
+print(engine.cmd("status"))          # 看当前状态
+print(engine.cmd("cast"))            # 抛一竿
+print(engine.cmd("cast 10"))         # 一次连钓 10 竿（只回一个汇总）
+print(engine.cmd("cast 20 stop=rare"))  # 连钓 20 竿，钓到稀有就停
+print(engine.new_game(2024))         # 用种子 2024 重开一局
+```
+
+> **Windows 用户**：游戏里有中文和 emoji。如果终端打印出现乱码或 `UnicodeEncodeError`，让控制台走 UTF-8 即可，三选一：
+> - 设环境变量 `PYTHONUTF8=1` 再运行（推荐）；
+> - 或在终端先执行 `chcp 65001`；
+> - 或在代码开头加 `import sys; sys.stdout.reconfigure(encoding="utf-8")`。
+> （文件本身是 UTF-8、引擎没问题，这只是终端显示的事。）
+
+> 任何输入都安全：`cmd("...")` 对乱七八糟的指令也只会**返回一句提示文字**，不会抛异常炸栈；存档读/写出问题（损坏 / 目录不可写）也会在返回里**明确告诉你**，不会假装存好了。
+
+---
+
+## 玩法
+
+- **买饵 → 抛竿（cast）**：抛竿是核心。按稀有度概率钓上常见 / 少见 / 稀有 / 史诗 / 传说 / 神话各档的鱼。
+- **每个地点 + 季节出的鱼不同**：想集齐图鉴，得 `goto` 换地点、留意季节（季节随抛竿数推进）。
+- **卖鱼 / 卖宝（sell）换点数**，点数用来买好饵、**解锁新水域**。
+- **抛竿偶遇**漂流瓶（收集纸条）、宝箱（要钥匙或花点数开）、宝物。
+- **集图鉴**：第一次钓到某种鱼会记入图鉴（卖掉也不丢记录），首次发现还有额外点数奖励。
+
+开局：200 点 + 普通蚯蚓×5，在「月光池塘」（和「芦苇河」已解锁）。
+
+## 指令清单（传给 `cmd("...")`）
+
+| 指令 | 作用 |
+|---|---|
+| `help` | 看规则 |
+| `status` | 点数 / 地点 / 季节 / 鱼饵 / 图鉴进度 |
+| `shop` | 看可买鱼饵 |
+| `buy <饵id> [数量]` | 买饵，如 `buy glow_bait 2` |
+| `cast [饵id] [次数] [stop=new,rare,event]` | 抛竿。不填饵=用最便宜的；带次数=连钓 N 竿（1~20）；`stop=` 遇新种/稀有/事件就提前停 |
+| `goto` | **不带参数 = 列出所有钓点**（价格 / 本季是否有鱼） |
+| `goto <地点id>` | 前往该地点（未解锁则花点数解锁） |
+| `inventory` | 渔篓 + 物品 + 待开宝箱 |
+| `sell <实例id> \| sell all \| sell species <鱼id> \| sell item <物品id>` | 卖鱼 / 卖财宝换点数 |
+| `open <宝箱uid>` | 打开钓上来的宝箱 |
+| `encyclopedia` | 图鉴收集进度 |
+| `look <id或中文名>` | 细看鱼 / 地点 / 鱼饵 / 季节 / 物品（没钓到的鱼显示 ？？？） |
+
+### 连钓省 token（重点）
+
+AI 一竿一条消息会反复来回烧上下文。用 `cast <次数>` 一次连钓：
+
+```
+cast 10                # 连钓 10 竿
+cast glow_bait 15 stop=rare   # 用夜光饵连钓 15 竿，钓到稀有及以上就停
+```
+
+返回是**一个汇总**：新种 / 稀有 / 事件 / 换季这些**精彩时刻留完整文案**，重复的杂鱼和空军**折叠成一行清点**。一次连钓把「≈2N 次往返」压成「≈2 次」。
+
+## 存档 & 确定性
+
+- 状态存在**和脚本同目录**的 `fishing_save.json`。删掉它 = 从头开始。
+- 确定性：mulberry32 PRNG，随机状态序列化进存档。**同 seed + 同指令序列 → 结果完全一致**。默认种子 `0x9e3779b9`。
+- 想多人各自一局：给每个玩家一个独立的工作目录（各有各的 `fishing_save.json`）。
+
+---
+
+## 接到你的 AI 上（三种接法，自己挑）
+
+引擎只负责玩法逻辑，**怎么让你的 AI 调用它，由你按自己的栈配置**。三种常见姿势：
+
+### ① AI 有代码执行（最简单）
+ChatGPT 代码解释器 / Claude 带代码执行 / 自带沙箱的 agent：
+把 `fishing.py`（盲玩版）丢给它，让它：
+
+```python
+import fishing
+print(fishing.cmd("status"))
+# 然后根据返回文字决定下一步，循环 cmd("cast")/cmd("buy ...")/cmd("goto ...")
+```
+
+见 `examples/play_with_code_interpreter.md`。
+
+### ② 函数调用 / Tool use
+把 `tool-schema.json` 里的 `play_fishing` 注册成一个工具。你的工具处理函数收到结构化参数后，转成指令字符串调 `engine.cmd()`，再把返回文字喂回模型：
+
+```python
+import engine
+
+def play_fishing(args: dict) -> str:
+    a = args["action"]
+    if a == "cast":
+        parts = ["cast"]
+        if args.get("bait_id"): parts.append(args["bait_id"])
+        if args.get("times"):   parts.append(str(args["times"]))
+        if args.get("stop_on"): parts.append("stop=" + ",".join(args["stop_on"]))
+        return engine.cmd(" ".join(parts))
+    if a == "buy":   return engine.cmd(f"buy {args.get('bait_id','')} {args.get('qty',1)}")
+    if a == "goto":  return engine.cmd(f"goto {args.get('location_id','')}".strip())
+    if a == "sell":  return engine.cmd(f"sell {args.get('target','')}")
+    if a == "open":  return engine.cmd(f"open {args.get('chest_uid','')}")
+    if a == "look":  return engine.cmd(f"look {args.get('id','')}")
+    return engine.cmd(a)   # status / shop / inventory / encyclopedia
+```
+
+**更省事的替代**：不想用结构化参数，就注册一个只有一个字符串参数 `command` 的工具，处理函数直接 `return engine.cmd(command)`。模型自己写 `"cast 10 stop=rare"` 这种指令。
+
+### ③ 自己写循环
+最朴素：模型输出一条指令 → 你 `engine.cmd(指令)` → 把返回文字塞回对话 → 模型决定下一步 → 循环。
+
+---
+
+## 盲玩说明（防剧透）
+
+想让 AI 像真玩家一样**靠抛竿发现**、而不是提前知道有哪些鱼 / 概率：
+
+- 给它 **`fishing.py`**（引擎藏在打包数据里），别给 `engine.py`。
+- 告诉它：只调 `cmd()`，别去解码 / 读文件里那段打包数据。
+
+> 坦白说：打包只是编码、不是加密，铁了心要偷看的模型一行代码就能解开。盲玩本质靠**配合**。正经玩的模型照着说明来就不会剧透。
+
+---
+
+## 内容规模
+
+55 种鱼（跨常见 / 少见 / 稀有 / 史诗 / 传说 / 神话 6 档）· 11 个钓点（2 个免费 + 9 个 200~800 点解锁）· 4 季节（每 20 竿推进一季）· 3 种鱼饵 · 漂流瓶 / 宝箱 / 宝物事件 · 物品与点数经济 · 图鉴收集 · 稀有度仪式感播报 + 地点氛围/性格句。
+
+## 改造 / 扩展
+
+所有内容（鱼 / 地点 / 鱼饵 / 季节 / 事件 / 物品）都是 `engine.py` 顶部的纯数据表，加内容只改数据、不动逻辑。
+
+改完 `engine.py` 后，如果你用盲玩版，跑一下让它跟上：
+
+```bash
+python build_blind.py     # 从 engine.py 重新生成 fishing.py
+```
+
+`fishing.py` 的内容就是 `engine.py` 的 base64，两份永远一致、不会分叉。
+
+## License
+
+MIT，详见 `LICENSE`。随便用、随便改、随便接到你和你 AI 的小日子里。🎣
