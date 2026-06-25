@@ -9,8 +9,4 @@ services:
       - key: MCP_AUTH_TOKEN     # 在 Render 控制台手动填一个随机长字符串
         sync: false
       - key: DATA_DIR
-        value: /var/data        # 指向下面挂载的持久磁盘
-    disk:
-      name: fishing-data
-      mountPath: /var/data      # 存档 fishing_save.json 放这里，重启不丢
-      sizeGB: 1
+        value: ./data           # 免费版无持久磁盘：存档落临时目录，休眠/重部署会重置

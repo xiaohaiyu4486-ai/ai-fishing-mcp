@@ -23,8 +23,13 @@
 
 ### 方式 A：Blueprint（推荐，一步到位）
 1. Render 控制台 → **New → Blueprint** → 选这个 GitHub 仓库。
-2. Render 读到 `render.yaml`，会建一个 Python web 服务 + 1GB 持久磁盘（挂在 `/var/data`）。
+2. Render 读到 `render.yaml`，会建一个 Python web 服务（free 套餐）。
 3. 部署时会让你填 `MCP_AUTH_TOKEN`（`sync:false` 的变量）——填一个随机长字符串。
+
+> ⚠️ **免费版无持久磁盘**：存档落在临时目录，服务闲置约 15 分钟会休眠、
+> 休眠或重新部署后存档会被重置（每隔一阵从头钓）。想让进度永久保留，
+> 把 `render.yaml` 里 `plan: free` 改成 `plan: starter`（约 $7/月），
+> 再加回持久磁盘（见 git 历史里的旧版 render.yaml）。
 
 ### 方式 B：手动建 Web Service
 1. **New → Web Service** → 选这个仓库。
