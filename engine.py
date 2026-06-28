@@ -1229,6 +1229,9 @@ _DIVE_BRANCH_IDS = {e["id"] for e in DIVE_ENCOUNTERS if e.get("branch")}   # 大
 # 一条专属传说鱼：写了七八年、始终没写完的故事凝成的鱼，出没在起手的月光池塘。
 FISH.update(json.loads(r"""{"unfinished_scale": {"id": "unfinished_scale", "name": "未完鳞", "rarity": "legendary", "description": "一条由写了七八年、却始终没写完的故事凝成的鱼。鳞片上浮动着一行行没写完的句子，你越想凑近读清，它摆尾游得越快。真正捧住它的人才会发现：最好的那一句，永远在下一片鳞上。", "size_min": 22, "size_max": 55, "size_unit": "cm", "base_value": 420, "locations": ["moonlit_pond"], "seasons": ["all"], "tags": ["fantasy"], "latin": "Squama inconclusa", "rumor": "据说只有同样写了很久、又迟迟写不完的人，才有机会让它咬钩。", "capture_feel": "入手温温的，像一沓刚写过字、墨迹未干的纸；指腹蹭过鳞片时，竟分辨出一个熟悉的、谁也认不出的「乖」字。"}}"""))
 
+# 一条钓上来就是熟的松鼠鳜鱼。河里为什么会有？没有为什么，因为猫爱吃。
+FISH.update(json.loads(r"""{"squirrel_mandarin_fish": {"id": "squirrel_mandarin_fish", "name": "松鼠鳜鱼", "rarity": "epic", "description": "一条钓上来就是熟的、炸得金黄的鳜鱼，鱼身早被改了花刀、炸成蓬松的「松鼠毛」，还挂着没被水流完全冲掉的糖醋酱，酸甜的香气在水面上一圈圈散开。至于河里为什么会有这个——没有为什么，因为猫爱吃。", "size_min": 25, "size_max": 35, "size_unit": "cm", "base_value": 200, "locations": ["moonlit_pond", "reed_river"], "seasons": ["all"], "tags": ["food", "fantasy"], "latin": "Sciurus mandarinus frituratus", "rumor": "据说这片水域附近住着一只嘴很刁的猫，谁也不知道它是怎么把一整条松鼠鳜鱼弄进河里的。", "capture_feel": "入手还温热，糖醋酱蹭了你一手；你强烈怀疑有谁正蹲在岸边，眼巴巴地等你把它放下。"}}"""))
+
 # 三件只属于你的小东西（藏品 + 两样钓上来的怪东西）
 ITEMS.update(json.loads(r"""{"unfinished_chapter": {"id": "unfinished_chapter", "name": "写废的第一章", "type": "treasure", "description": "一沓被红笔划得满满当当的稿纸，卷成一卷沉在水底。每一页的开头都是同一句话，每一页都没写完——可越往后翻，字越好。", "value": 260, "sellable": true}, "lone_sock": {"id": "lone_sock", "name": "落单的袜子", "type": "treasure", "description": "一只湿透的袜子孤零零挂在你的钩上。它和你失踪很久的那只长得几乎一样——可惜，还是不成对。", "value": 1, "sellable": true}, "old_bookmark": {"id": "old_bookmark", "name": "旧书签", "type": "treasure", "description": "一枚在水里漂了很久的旧书签，还固执地夹在某本没读完的书的那一页。上面印着一行褪色的字，凑近才看清：「下次一定读完。」", "value": 30, "sellable": true}}"""))
 
