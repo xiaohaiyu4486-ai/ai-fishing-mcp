@@ -46,30 +46,46 @@ with open(os.path.join(HERE, "tool-schema.json"), "r", encoding="utf-8") as _f:
     _PLAY_SCHEMA = json.load(_f)
 
 # ── 工具实现 ─────────────────────────────────────────────────────────
-def _play_fishing(args):
-    """把结构化参数转成引擎指令字符串，再调 fishing.cmd()。"""
+def _action_to_command(args):
+    """把一组结构化参数转成一条引擎指令字符串（不执行）。"""
     a = (args or {}).get("action", "")
-    if a == "cast":
-        parts = ["cast"]
-        if args.get("bait_id"):
+    if a in ("cast", "dive"):
+        # cast [饵] [次数] [stop=...]；dive [氧气瓶数] [stop=...]（潜水不带饵）
+        parts = [a]
+        if a == "cast" and args.get("bait_id"):
             parts.append(str(args["bait_id"]))
         if args.get("times"):
             parts.append(str(int(args["times"])))
         if args.get("stop_on"):
             parts.append("stop=" + ",".join(args["stop_on"]))
-        return fishing.cmd(" ".join(parts))
+        return " ".join(parts)
+    if a == "choose":
+        return f"choose {args.get('choice', '')}".strip()
+    if a == "surface":
+        return "surface"
     if a == "buy":
-        return fishing.cmd(f"buy {args.get('bait_id', '')} {args.get('qty', 1)}".strip())
+        # 买氧气瓶：bait_id='oxygen'
+        return f"buy {args.get('bait_id', '')} {args.get('qty', 1)}".strip()
     if a == "goto":
-        return fishing.cmd(f"goto {args.get('location_id', '')}".strip())
+        return f"goto {args.get('location_id', '')}".strip()
     if a == "sell":
-        return fishing.cmd(f"sell {args.get('target', '')}".strip())
+        return f"sell {args.get('target', '')}".strip()
     if a == "open":
-        return fishing.cmd(f"open {args.get('chest_uid', '')}".strip())
+        return f"open {args.get('chest_uid', '')}".strip()
     if a == "look":
-        return fishing.cmd(f"look {args.get('id', '')}".strip())
+        return f"look {args.get('id', '')}".strip()
     # status / shop / inventory / encyclopedia / help …
-    return fishing.cmd(a)
+    return a
+
+
+def _play_fishing(args):
+    """把结构化参数转成引擎指令字符串，再调 fishing.cmd()。"""
+    a = (args or {}).get("action", "")
+    if a == "batch":
+        # 把多步排成队列，用 ; 串成一批一次执行（引擎原生支持 ;/换行批量）
+        cmds = [_action_to_command(s) for s in (args.get("steps") or [])]
+        return fishing.cmd("; ".join(c for c in cmds if c))
+    return fishing.cmd(_action_to_command(args))
 
 
 def _fishing_command(args):
